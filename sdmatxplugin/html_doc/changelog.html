@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <style>
+   .center {
+                margin: auto;
+                width: 50%;
+                padding: 10px;
+                font-family: Sans-serif
+            }
+            img {
+                max-width: 100%;
+                max-height: 100%;
+            }
+            code {
+                color: navy;
+                white-space: pre
+            }
+  </style>
+ </head>
+ <body>
+  <div class="center">
+   <h1>
+    Changelog
+   </h1>
+   <p>
+    v 0.1.5
+* Updated floor sample to avoid issues with Designer 10.2.0
+* Updated Shader bindings to be more compatible with third
+  party consumers of MaterialX documents
+* Updated paths to always use forward slashes
+* Added documentation on how to use shaders in Arnold for Maya 
+* Corrected bug in tiled image in MDL
+* Added support for the normal map node
+   </p>
+   <p>
+    v 0.1.4
+   </p>
+   <ul>
+    <li>
+     Added Painter Template and Sample
+    </li>
+    <li>
+     Corrected painter shader so specular color affects non-metallic materials instead of metallic ones
+    </li>
+    <li>
+     Corrected Painter Normal map tangent base to adapt automatically for the baked normals
+    </li>
+    <li>
+     Added html documentation
+    </li>
+    <li>
+     Added support for upcoming changes to MaterialX master preserving 1.37.1 compatibility
+    </li>
+   </ul>
+   <p>
+    v 0.1.3
+   </p>
+   <ul>
+    <li>
+     Split out glsl codegen to a separate python module
+    </li>
+    <li>
+     Added a configuration file for configuring paths and the viewer
+    </li>
+    <li>
+     Removed issue related to finding the Substance Designer Document directory when HOME environment variable specified on windows
+    </li>
+    <li>
+     Added documentation for what features are supported and not in standard surface in different implementations
+    </li>
+    <li>
+     Updated floor sample for smaller export
+    </li>
+    <li>
+     Added missing image for floor sample documentation
+    </li>
+    <li>
+     Changed mat ball mesh in the package to make object space align with the object
+space for the default version of that model in Substance Designer
+    </li>
+    <li>
+     Added documentation notes on how to make coordinate systems align between 
+applications
+    </li>
+    <li>
+     Corrected iRay/MDL implementation of modulo to be consistent with GLSL
+    </li>
+   </ul>
+   <p>
+    v 0.1.2
+   </p>
+   <ul>
+    <li>
+     Fixed issue with the path for user mdl documents breaking subgraph export
+    </li>
+    <li>
+     Added missing sample Floor.sbs
+    </li>
+    <li>
+     Added toolbar icon for the MaterialX toolbar
+    </li>
+    <li>
+     Added translation for atan2
+    </li>
+    <li>
+     Added compatibility checks on startup to make it easier to understand what goes wrong during initialization
+    </li>
+    <li>
+     Added check for changes to mtlx modules on startup to decide on whether to rebuild mdl files
+    </li>
+    <li>
+     Corrected behavior for tweaking parameters with min/max defined in GL viewport
+    </li>
+    <li>
+     More feedback when exporting subgraphs
+    </li>
+   </ul>
+   <p>
+    v 0.1.1
+   </p>
+   <ul>
+    <li>
+     Corrected documentation: sduserplugins is corretly spelled now
+    </li>
+    <li>
+     Renamed checkbox when exporting MaterialX files so it properly says it's about exporting the Standard Library
+    </li>
+    <li>
+     Fixed issue with more recent MaterialX builds breaking conversion of MaterialX standard library to MDL
+    </li>
+    <li>
+     Added specific error message related to unsupported nodes that are added by Designer when connecting a texture 
+directly to a color, float etc.
+    </li>
+   </ul>
+   <p>
+    v 0.1.0
+   </p>
+   <p>
+    Initial Release
+   </p>
+  </div>
+ </body>
+</html>
+

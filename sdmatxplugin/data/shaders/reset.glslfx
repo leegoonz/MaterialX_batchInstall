@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glslfx version="1.0.0" author="allegorithmic.com">
+
+    <!-- TECHNIQUES -->
+    <technique name="Parallax Occlusion">
+        <!-- PROPERTIES -->
+        <property name="blend_enabled"      value="true"/>
+        <property name="blend_func"         value="src_alpha,one_minus_src_alpha"/>
+        <property name="cull_face_enabled"  value="true"/>
+        <property name="cull_face_mode"     value="back"/>
+
+        <!-- SHADERS -->
+        <shader type="vertex"               filename="reset/vs.glsl"/>
+        <shader type="fragment"             filename="reset/fs.glsl"/>
+
+    </technique>    
+    <technique name="Tesselation">
+        <!-- PROPERTIES -->
+        <property name="blend_enabled"      value="true"/>
+        <property name="blend_func"         value="src_alpha,one_minus_src_alpha"/>
+        <property name="cull_face_enabled"  value="true"/>
+        <property name="cull_face_mode"     value="back"/>
+
+        <!-- SHADERS -->
+        <shader type="vertex"               filename="reset/vs.glsl"/>
+        <shader type="fragment"             filename="reset/fs.glsl"/>
+
+    </technique>
+
+    <!-- INPUT VERTEX FORMAT -->
+    <vertexformat name="iVS_Position"       semantic="position"/>
+    <vertexformat name="iVS_Normal"         semantic="normal"/>
+    <vertexformat name="iVS_UV"             semantic="texcoord0"/>
+    <vertexformat name="iVS_Tangent"        semantic="tangent0"/>
+    <vertexformat name="iVS_Binormal"       semantic="binormal0"/>
+
+    <!-- MATRICES -->
+    <uniform name="worldMatrix"             semantic="world"/>
+    <uniform name="worldViewProjMatrix"     semantic="worldviewprojection"/>
+    <uniform name="worldInverseTransposeMatrix" semantic="worldinversetranspose"/>
+
+    <!-- SCENE PARAMETERS -->
+    <uniform name="ambientColor"            semantic="ambient"/>
+    <uniform name="Lamp0Pos"                semantic="lightposition0"/>
+    <uniform name="Lamp0Color"              semantic="lightcolor0"/>
+    <uniform name="Lamp0Intensity"          semantic="lightintensity0"/>
+    <uniform name="Lamp1Pos"                semantic="lightposition1"/>
+    <uniform name="Lamp1Color"              semantic="lightcolor1"/>
+    <uniform name="Lamp1Intensity"          semantic="lightintensity1"/>
+    <uniform name="uvwScale"                semantic="uvwscale"/>
+    <uniform name="displayUVTileOnly"       semantic="renderuvtile"/>
+    <uniform name="uvTileCoords"            semantic="uvtilecoords"/>
+
+
+
+</glslfx>

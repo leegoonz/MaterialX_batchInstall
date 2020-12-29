@@ -1,0 +1,56 @@
+{
+  "_comment": [
+    "For paths:",
+    "${PLUGIN_ROOT} resolves to the root of the plugin installation",
+    "(typically ~/Documents/Allegorithmic/Substance Designer/python/userplugins/sdmatxplugin",
+    "${PLUGIN_DOC_ROOT} resolves to the document root for the plugin",
+    "(typically ~/Documents/Allegorithmic/Substance Designer/sdmatx",
+    "${SRC_DOC} resolves to with the materialx document to view based on context of where it's referred such as a",
+    "document to view in a viewer",
+    "${PLATFORM_EXE_EXTENSION} is replaced with the executable extension on the platform",
+    "(.exe on windows and nothing on linux/mac)"
+  ],
+  "materialx": {
+    "_comment": [
+      "Represents global materialx settings. Note, the submodule_mtlx will be added automatically",
+      "for a smooth workflow with subgraphs"
+    ],
+    "std_modules": [
+      "stdlib",
+      "bxdf",
+      "alglib"
+    ],
+    "search_paths": [
+      "${PLUGIN_ROOT}/data/mtlx",
+      "${PLUGIN_ROOT}/MaterialX/libraries",
+      "${PLUGIN_ROOT}/MaterialX"
+    ]
+  },
+  "viewer": {
+    "_comment": [
+      "Represents settings related to the viewer",
+      "; will be replaced with the system local path string separator"
+    ],
+    "executable": "${PLUGIN_ROOT}/MaterialX/bin/MaterialXView${PLATFORM_EXE_EXTENSION}",
+    "parameters": [
+      "--material",
+      "${SRC_DOC}",
+      "--path",
+      "${PLUGIN_ROOT}/data/mtlx;${PLUGIN_ROOT}/MaterialX/libraries;${PLUGIN_ROOT}/MaterialX",
+      "--refresh",
+      "1000"
+    ]
+  },
+  "paths": {
+    "_comment": "Paths for exporting and importing",
+    "painter_export": "${PLUGIN_DOC_ROOT}/painter",
+    "materialx_export": "${PLUGIN_DOC_ROOT}/export",
+    "mdl_subgraph": "${PLUGIN_DOC_ROOT}/mdl",
+    "mtlx_subgraph": "${PLUGIN_DOC_ROOT}/mtlx/user",
+    "designer_glsl": "${PLUGIN_ROOT}/data/shaders",
+    "painter_template": "${PLUGIN_ROOT}/data/painter",
+    "plugin_mdl": "${PLUGIN_ROOT}/data/mdl",
+    "plugin_mtlx": "${PLUGIN_ROOT}/data/mtlx",
+    "temp": "${PLUGIN_ROOT}/temp"
+  }
+}

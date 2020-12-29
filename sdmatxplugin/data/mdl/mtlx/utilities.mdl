@@ -1,0 +1,913 @@
+/*
+Copyright 2020 Adobe
+All Rights Reserved.
+
+NOTICE: Adobe permits you to use, modify, and distribute this file in
+accordance with the terms of the Adobe license agreement accompanying
+it. If you have received this file from a source other than Adobe,
+then your use, modification, or distribution of it requires the prior
+written permission of Adobe. 
+*/
+
+mdl 1.4;
+
+
+using mtlx::shared import *;
+
+//- Custom annotation for Substance Designer specifics
+import alg::base::annotations::*;
+
+
+//- more.
+using state import *;
+using base import *;
+using tex import *;
+using anno import *;
+using math import *;
+using df import *;
+
+///////////////// Utilities ////////////////
+// Here are a few utility functions to deal with parameters the way they get
+// served by matx
+
+export state::coordinate_space getSpaceByString(varying string space)
+[[ anno::hidden() ]]
+{
+    if (space=="world") {
+        return state::coordinate_world;
+    }
+    if (space=="object") {
+        return state::coordinate_object;
+    }
+    return state::coordinate_internal;
+}
+
+export tex::wrap_mode get_wrap_mode(uniform string mode)
+[[ anno::hidden() ]]
+{
+    if (mode == "black") {
+        return tex::wrap_clip;
+    }
+    if (mode == "clamp") {
+        return tex::wrap_clamp;
+    }
+    return tex::wrap_repeat;
+}
+
+
+//////////////// These are private functions copied from the base module /////////////////
+
+
+const int[256] rnd1(151,160,137,91,90,15,
+    131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
+    190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
+    88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
+    77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
+    102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
+    135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
+    5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
+    223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
+    129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
+    251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
+    49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
+    138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180);
+
+const int[256] rnd2(120,73,105,71,106,25,159,92,184,93,179,181,
+    51,168,252,235,114,143,108,82,4,72,9,192,214,112,12,200,188,8,187,117,157,88,70,87,
+    56,38,115,96,59,24,215,231,123,44,144,119,243,245,212,249,197,109,76,66,183,58,232,
+    113,86,234,203,80,163,254,140,62,174,118,167,18,55,99,126,170,52,149,156,142,89,189,
+    178,240,255,251,169,226,236,153,223,219,54,130,133,7,173,77,242,190,1,122,27,147,196,
+    180,238,124,145,101,195,57,61,39,53,154,45,47,107,233,20,176,83,36,136,138,15,230,
+    246,94,69,6,135,132,29,131,172,199,228,177,182,216,134,151,95,17,218,155,19,175,41,
+    191,85,23,160,125,248,42,209,165,110,102,79,221,32,26,217,2,46,81,74,16,63,202,220,
+    37,75,205,13,21,68,148,40,253,241,250,141,164,35,104,49,50,224,166,247,208,162,193,
+    150,30,14,10,60,98,207,84,11,239,100,116,152,90,225,129,128,64,28,158,186,127,97,
+    204,206,65,5,194,91,67,198,48,111,211,227,229,237,244,43,146,139,222,137,201,22,103,
+    210,34,213,31,0,33,185,161,78,121,171,3);
+
+const int[256] rnd3(
+    88,147,251,140,206,77,107,169,5,222,84,97,116,234,24,90,201,133,40,216,229,34,37,
+    158,186,49,98,61,47,9,124,123,65,249,2,66,76,172,198,179,218,210,78,170,132,32,60,
+    110,213,223,151,225,115,83,180,161,42,41,164,250,233,70,231,27,217,244,114,96,183,
+    228,63,195,236,192,177,209,246,109,171,72,101,23,35,112,182,162,57,69,146,81,248,215,
+    7,154,178,252,136,55,150,8,1,142,167,199,39,3,14,135,152,74,33,243,121,13,181,26,211,
+    19,64,168,58,67,52,143,113,43,25,240,166,59,4,187,53,238,103,159,220,204,208,245,85,
+    122,62,120,93,191,224,16,68,80,226,207,134,188,73,232,102,125,196,254,253,130,241,
+    46,119,38,94,221,153,100,163,175,242,131,255,214,87,139,92,12,203,117,219,21,239,6,
+    31,20,44,50,28,111,141,18,157,145,11,30,237,82,129,200,89,148,95,194,144,128,176,45,
+    79,106,235,75,0,230,160,126,138,227,247,91,17,173,29,51,71,22,36,118,149,189,155,156,
+    197,54,202,99,174,137,105,184,205,108,10,193,165,127,56,212,104,190,185,48,86,15);
+
+const int[256] rnd4(
+    249,199,162,114,17,55,64,57,29,137,194,247,45,70,210,106,184,178,219,122,156,193,
+    214,126,138,28,148,121,19,37,135,132,173,225,221,161,180,220,36,84,224,10,185,209,
+    238,119,89,253,165,248,120,235,198,52,3,190,125,226,20,6,168,2,170,167,94,54,201,
+    179,42,208,242,33,146,158,245,196,166,83,86,34,74,188,44,49,85,11,243,4,99,100,102,
+    78,252,26,35,24,113,236,237,9,1,72,63,204,13,15,129,53,79,163,212,213,48,92,97,38,
+    189,68,230,234,41,22,246,133,250,202,77,112,18,218,229,124,181,14,108,107,255,91,
+    145,223,134,142,96,88,222,207,141,175,203,27,69,95,62,47,147,164,130,232,39,244,21,
+    154,239,153,110,172,59,46,81,176,217,80,150,159,182,186,66,174,169,98,231,123,215,
+    12,128,187,127,58,32,111,160,149,31,195,65,152,144,82,197,216,75,61,101,117,93,51,
+    60,0,67,211,241,206,90,87,56,240,73,177,43,155,157,71,191,136,103,116,140,205,143,
+    228,109,23,16,171,115,7,131,192,183,105,251,5,139,40,200,30,254,227,76,151,50,8,104,
+    118,233,25);
+
+const int[256] rnd5(
+    39,244,56,240,73,135,254,227,196,35,166,195,65,132,173,225,177,41,158,245,22,199,
+    214,126,138,28,200,148,121,19,37,221,161,180,220,36,84,224,10,143,185,209,249,
+    248,120,235,198,52,3,190,125,226,20,6,168,2,170,167,94,54,201,5,139,40,30,76,
+    179,42,49,85,11,243,4,99,100,182,97,26,186,206,90,175,203,113,144,236,130,232,
+    7,131,192,228,109,23,21,159,183,105,251,151,50,8,104,89,253,142,222,207,27,69,95,
+    189,68,230,234,162,114,246,133,250,202,77,112,18,218,229,124,43,155,157,71,191,
+    154,239,153,66,174,169,98,231,75,115,17,145,61,101,123,215,128,187,127,102,110,
+    78,252,14,108,223,62,47,147,164,13,96,88,93,51,15,129,53,79,163,212,213,48,92,24,
+    55,64,57,29,137,194,247,45,70,210,106,184,178,219,122,156,193,181,107,255,91,
+    12,172,59,46,81,176,217,80,150,58,32,111,160,149,31,82,197,216,117,165,134,
+    60,0,67,211,87,16,171,241,136,103,116,140,205,237,9,72,63,204,38,238,119,
+    118,1,233,25,141,208,242,33,146,152,83,86,34,74,188,44);
+
+export float mx_fade(float t)
+[[ anno::hidden() ]]
+{
+    return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
+}
+
+const float4[128] grad4(
+        float4(0,1,1,1), float4(0,-1,1,0), float4(1,1,0,-1), float4(0,-1,1,-1), float4(0,1,1,0), float4(1,0,-1,1), float4(0,-1,-1,0), float4(-1,0,-1,-1), float4(0,1,-1,1),  float4(1,1,0,1), float4(1,0,-1,-1), float4(0,1,1,-1), float4(0,1,-1,0), float4(-1,1,0,1), float4(0,-1,-1,1), float4(-1,0,1,-1), float4(0,-1,-1,-1), float4(1,0,1,1), float4(-1,-1,0,-1), float4(0,-1,1,1), float4(-1,1,0,-1), float4(0,1,-1,-1), float4(1,-1,0,1), float4(0,-1,-1,0), float4(-1,0,-1,1), float4(1,-1,0,-1), float4(0,-1,1,0), float4(-1,-1,0,1), float4(0,1,-1,0), float4(1,1,0,-1), float4(-1,0,1,1), float4(0,1,1,0),
+        float4(1,1,0,-1), float4(0,1,1,-1), float4(-1,0,1,1), float4(0,1,1,0), float4(0,-1,1,-1), float4(0,-1,-1,0), float4(1,0,-1,1), float4(0,1,-1,1), float4(-1,0,-1,-1), float4(1,0,-1,-1), float4(1,1,0,1), float4(0,1,-1,0), float4(0,1,1,1), float4(0,-1,1,0), float4(-1,1,0,1), float4(0,1,-1,0), float4(1,1,0,-1), float4(0,-1,-1,1), float4(-1,0,1,-1), float4(0,-1,-1,-1), float4(1,0,1,1), float4(-1,-1,0,-1), float4(0,-1,1,1), float4(-1,1,0,-1), float4(0,1,-1,-1), float4(1,-1,0,1), float4(0,-1,-1,0), float4(-1,0,-1,1), float4(1,-1,0,-1), float4(0,1,1,0), float4(0,-1,1,0), float4(-1,-1,0,1),
+        float4(1,0,1,1), float4(-1,-1,0,-1), float4(0,1,1,0), float4(-1,0,1,-1), float4(1,1,0,1), float4(-1,0,-1,-1), float4(0,-1,-1,0), float4(1,0,-1,-1), float4(-1,0,-1,1), float4(1,-1,0,-1), float4(0,1,1,-1), float4(0,1,-1,0), float4(-1,1,0,1), float4(0,-1,-1,1), float4(1,1,0,-1), float4(-1,0,1,1), float4(0,-1,-1,-1), float4(1,0,-1,1), float4(0,1,1,1), float4(0,-1,1,0), float4(-1,1,0,-1), float4(0,-1,1,1), float4(0,1,-1,-1), float4(1,-1,0,1), float4(0,-1,1,0), float4(-1,-1,0,1), float4(0,1,-1,0), float4(0,-1,1,-1), float4(0,1,1,0), float4(1,1,0,-1), float4(0,-1,-1,0), float4(0,1,-1,1),
+         float4(0,1,-1,1), float4(1,1,0,1), float4(1,0,-1,-1), float4(0,1,-1,0), float4(0,1,1,1), float4(0,-1,1,0), float4(-1,1,0,1), float4(0,1,-1,0), float4(1,1,0,-1), float4(0,-1,-1,1), float4(-1,0,1,-1), float4(0,-1,-1,-1), float4(1,0,1,1), float4(-1,-1,0,-1), float4(0,-1,1,1), float4(-1,1,0,-1), float4(0,1,-1,-1), float4(1,-1,0,1), float4(0,-1,-1,0), float4(-1,0,-1,1), float4(1,-1,0,-1), float4(0,1,1,0), float4(0,-1,1,0), float4(-1,-1,0,1), float4(1,1,0,-1), float4(0,1,1,-1), float4(-1,0,1,1), float4(0,1,1,0), float4(0,-1,1,-1), float4(1,0,-1,1), float4(0,-1,-1,0), float4(-1,0,-1,-1));
+
+export float mx_gradient(int hash, float x, float y, float z, float w)
+[[ anno::hidden() ]]
+{
+    return x*grad4[hash].x + y*grad4[hash].y + z*grad4[hash].z + w*grad4[hash].w;
+}
+
+export float mx_gradient(int hash, float x, float y, float z)
+[[
+    anno::hidden()
+]]
+{
+    return x*grad4[hash].x + y*grad4[hash].y + z*grad4[hash].z;
+}
+
+export float mx_gradient(int hash, float x, float y)
+[[
+    anno::hidden()
+]]
+{
+    return x*grad4[hash].x + y*grad4[hash].y;
+}
+
+export float mx_gradient(int hash, float x)
+[[
+    anno::hidden()
+]]
+{
+    return x*grad4[hash].x;
+}
+
+
+export float3 mx_gradient(int3 hash, float x, float y, float z, float w)
+[[ anno::hidden() ]]
+{
+    return float3(
+        mx_gradient(hash.x, x, y, z, w),
+        mx_gradient(hash.y, x, y, z, w),
+        mx_gradient(hash.z, x, y, z, w));
+}
+
+export float3 mx_gradient(int3 hash, float x, float y, float z)
+[[
+    anno::hidden()
+]]
+{
+    return float3(
+        mx_gradient(hash.x, x, y, z),
+        mx_gradient(hash.y, x, y, z),
+        mx_gradient(hash.z, x, y, z));
+}
+
+export float3 mx_gradient(int3 hash, float x, float y)
+[[
+    anno::hidden()
+]]
+{
+    return float3(
+        mx_gradient(hash.x, x, y),
+        mx_gradient(hash.y, x, y),
+        mx_gradient(hash.z, x, y));
+}
+
+export float3 mx_gradient(int3 hash, float x)
+[[
+    anno::hidden()
+]]
+{
+    return float3(
+        mx_gradient(hash.x, x),
+        mx_gradient(hash.y, x),
+        mx_gradient(hash.z, x));
+}
+
+int combineHash(int hash1, int hash2)
+{
+    return hash1^hash2;
+}
+int combineHash(int hash1, int hash2, int hash3)
+{
+    return hash1^hash2^hash3;
+}
+int combineHash(int hash1, int hash2, int hash3, int hash4)
+{
+    return hash1^hash2^hash3^hash4;
+}
+int3 combineHash(int3 hash1, int3 hash2)
+{
+    return int3(
+        hash1.x^hash2.x,
+        hash1.y^hash2.y,
+        hash1.z^hash2.z);
+}
+int3 combineHash(int3 hash1, int3 hash2, int3 hash3)
+{
+    return int3(
+        hash1.x^hash2.x^hash3.x,
+        hash1.y^hash2.y^hash3.y,
+        hash1.z^hash2.z^hash3.z);
+}
+int3 combineHash(int3 hash1, int3 hash2, int3 hash3, int3 hash4)
+{
+    return int3(
+        hash1.x^hash2.x^hash3.x^hash4.x,
+        hash1.y^hash2.y^hash3.y^hash4.y,
+        hash1.z^hash2.z^hash3.z^hash4.z);
+}
+
+
+export float perlin_noise_float(float4 pos)
+[[
+    anno::hidden()
+]]
+{
+    int X = math::floor(pos.x),
+        Y = math::floor(pos.y),
+        Z = math::floor(pos.z),
+        W = math::floor(pos.w);
+    float fx = pos.x-float(X);
+    float fy = pos.y-float(Y);
+    float fz = pos.z-float(Z);
+    float fw = pos.w-float(W);
+    float u = mx_fade(fx);
+    float v = mx_fade(fy),
+          w = mx_fade(fz),
+          x = mx_fade(fw);
+    int AX = rnd1[ X   &255] & 127, // &127 = hash for grad4 lookups
+        BX = rnd1[(X+1)&255] & 127,
+        AY = rnd2[ Y   &255] & 127,
+        BY = rnd2[(Y+1)&255] & 127,
+        AZ = rnd3[ Z   &255] & 127,
+        BZ = rnd3[(Z+1)&255] & 127;
+    int AW = rnd4[ W   &255] & 127;
+
+    float[2] result;
+    for (int i = 0; i < 2; ++i) {
+        result[i] = math::lerp(
+            math::lerp(
+                math::lerp(
+                    mx_gradient(combineHash(AX,AY,AZ,AW), fx     , fy     , fz     , fw),
+                    mx_gradient(combineHash(BX,AY,AZ,AW), fx-1.0f, fy     , fz     , fw),
+                    u),
+                math::lerp(
+                    mx_gradient(combineHash(AX,BY,AZ,AW), fx     , fy-1.0f, fz     , fw),
+                    mx_gradient(combineHash(BX,BY,AZ,AW), fx-1.0f, fy-1.0f, fz     , fw),
+                    u),
+                v),
+            math::lerp(
+                math::lerp(
+                    mx_gradient(combineHash(AX,AY,BZ,AW), fx     , fy     , fz-1.0f, fw),
+                    mx_gradient(combineHash(BX,AY,BZ,AW), fx-1.0f, fy     , fz-1.0f, fw),
+                    u),
+                math::lerp(
+                    mx_gradient(combineHash(AX,BY,BZ,AW), fx     , fy-1.0f, fz-1.0f, fw),
+                    mx_gradient(combineHash(BX,BY,BZ,AW), fx-1.0f, fy-1.0f, fz-1.0f, fw),
+                    u),
+                v),
+            w);
+        AW = rnd4[(W+1)&255] & 127;
+        fw -= 1.0f;
+    }
+
+    return math::lerp(result[0], result[1], x);
+}
+
+export float perlin_noise_float(float3 pos)
+[[
+    anno::hidden()
+]]
+{
+    int X = math::floor(pos.x),
+        Y = math::floor(pos.y),
+        Z = math::floor(pos.z);
+    float fx = pos.x-float(X);
+    float fy = pos.y-float(Y);
+    float fz = pos.z-float(Z);
+    float u = mx_fade(fx),
+          v = mx_fade(fy),
+          w = mx_fade(fz);
+
+    int AX = rnd1[ X   &255] & 127, // &127 = hash for grad4 lookups
+        BX = rnd1[(X+1)&255] & 127,
+        AY = rnd2[ Y   &255] & 127,
+        BY = rnd2[(Y+1)&255] & 127,
+        AZ = rnd3[ Z   &255] & 127,
+        BZ = rnd3[(Z+1)&255] & 127;
+
+    return math::lerp(
+        math::lerp(
+            math::lerp(
+                mx_gradient(combineHash(AX,AY,AZ), fx, fy, fz),
+                mx_gradient(combineHash(BX,AY,AZ), fx-1.0f, fy, fz),
+                u),
+            math::lerp(
+                mx_gradient(combineHash(AX,BY,AZ), fx, fy-1.0f, fz),
+                mx_gradient(combineHash(BX,BY,AZ), fx-1.0f, fy-1.0f, fz),
+                u),
+            v),
+        math::lerp(
+            math::lerp(
+                mx_gradient(combineHash(AX,AY,BZ), fx, fy, fz-1.0f),
+                mx_gradient(combineHash(BX,AY,BZ), fx-1.0f, fy, fz-1.0f),
+                u),
+            math::lerp(
+                mx_gradient(combineHash(AX,BY,BZ), fx, fy-1.0f, fz-1.0f),
+                mx_gradient(combineHash(BX,BY,BZ), fx-1.0f, fy-1.0f, fz-1.0f),
+                u),
+            v),
+        w);
+}
+
+export float3 perlin_noise_float3(float3 pos)
+[[
+    anno::hidden()
+]]
+{
+    int X = math::floor(pos.x),
+        Y = math::floor(pos.y),
+        Z = math::floor(pos.z);
+    float fx = pos.x-float(X);
+    float fy = pos.y-float(Y);
+    float fz = pos.z-float(Z);
+    float u = mx_fade(fx),
+          v = mx_fade(fy),
+          w = mx_fade(fz);
+
+    int3 AX = int3(rnd1[ X   &255] & 127, rnd2[ X   &255] & 127, rnd3[ X   &255] & 127);
+    int3 BX = int3(rnd1[(X+1)&255] & 127, rnd2[(X+1)&255] & 127, rnd3[(X+1)&255] & 127);
+    int3 AY = int3(rnd2[ Y   &255] & 127, rnd3[ Y   &255] & 127, rnd4[ Y   &255] & 127);
+    int3 BY = int3(rnd2[(Y+1)&255] & 127, rnd3[(Y+1)&255] & 127, rnd4[(Y+1)&255] & 127);
+    int3 AZ = int3(rnd3[ Z   &255] & 127, rnd4[ Z   &255] & 127, rnd5[ Z   &255] & 127);
+    int3 BZ = int3(rnd3[(Z+1)&255] & 127, rnd4[(Z+1)&255] & 127, rnd5[(Z+1)&255] & 127);
+
+    return math::lerp(
+        math::lerp(
+            math::lerp(
+                mx_gradient(combineHash(AX,AY,AZ), fx,      fy, fz),
+                mx_gradient(combineHash(BX,AY,AZ), fx-1.0f, fy, fz),
+                u),
+            math::lerp(
+                mx_gradient(combineHash(AX,BY,AZ), fx,      fy-1.0f, fz),
+                mx_gradient(combineHash(BX,BY,AZ), fx-1.0f, fy-1.0f, fz),
+                u),
+            v),
+        math::lerp(
+            math::lerp(
+                mx_gradient(combineHash(AX,AY,BZ), fx,      fy, fz-1.0f),
+                mx_gradient(combineHash(BX,AY,BZ), fx-1.0f, fy, fz-1.0f),
+                u),
+            math::lerp(
+                mx_gradient(combineHash(AX,BY,BZ), fx,      fy-1.0f, fz-1.0f),
+                mx_gradient(combineHash(BX,BY,BZ), fx-1.0f, fy-1.0f, fz-1.0f),
+                u),
+            v),
+        w);
+}
+
+export float perlin_noise_float(float2 pos)
+[[
+    anno::hidden()
+]]
+{
+    int X = int(math::floor(pos.x)),
+        Y = int(math::floor(pos.y));
+    float fx = pos.x-float(X);
+    float fy = pos.y-float(Y);
+    float u = mx_fade(fx);
+    int AX = rnd1[ X   &255] & 127, // &127 = hash for grad4 lookups
+        BX = rnd1[(X+1)&255] & 127,
+        AY = rnd2[ Y   &255] & 127,
+        BY = rnd2[(Y+1)&255] & 127;
+
+    return math::lerp(
+        math::lerp(
+            mx_gradient(combineHash(AX,AY), fx,      fy),
+            mx_gradient(combineHash(BX,AY), fx-1.0f, fy),
+            u),
+        math::lerp(
+            mx_gradient(combineHash(AX,BY), fx     , fy-1.0f),
+            mx_gradient(combineHash(BX,BY), fx-1.0f, fy-1.0f),
+            u),
+        mx_fade(fy)
+    );
+}
+
+export float3 perlin_noise_float3(float2 pos)
+[[
+    anno::hidden()
+]]
+{
+    int X = int(math::floor(pos.x)),
+        Y = int(math::floor(pos.y));
+    float fx = pos.x-float(X);
+    float fy = pos.y-float(Y);
+    float u = mx_fade(fx);
+
+    int3 AX = int3(rnd1[ X   &255] & 127, rnd2[ X   &255] & 127, rnd3[ X   &255] & 127);
+    int3 BX = int3(rnd1[(X+1)&255] & 127, rnd2[(X+1)&255] & 127, rnd3[(X+1)&255] & 127);
+    int3 AY = int3(rnd2[ Y   &255] & 127, rnd3[ Y   &255] & 127, rnd4[ Y   &255] & 127);
+    int3 BY = int3(rnd2[(Y+1)&255] & 127, rnd3[(Y+1)&255] & 127, rnd4[(Y+1)&255] & 127);
+
+    return math::lerp(
+        math::lerp(
+            mx_gradient(combineHash(AX,AY), fx,      fy),
+            mx_gradient(combineHash(BX,AY), fx-1.0f, fy),
+            u),
+        math::lerp(
+            mx_gradient(combineHash(AX,BY), fx     , fy-1.0f),
+            mx_gradient(combineHash(BX,BY), fx-1.0f, fy-1.0f),
+            u),
+        mx_fade(fy)
+    );
+}
+
+export float perlin_noise_float(float pos)
+[[
+    anno::hidden()
+]]
+{
+    int X = int(math::floor(pos));
+    float fx = pos-float(X);
+
+    return math::lerp(
+        mx_gradient(rnd1[ X   &255] & 127, fx     ), // &127 = hash for grad4 lookups
+        mx_gradient(rnd1[(X+1)&255] & 127, fx-1.0f),
+        mx_fade(fx)
+    );
+}
+
+//
+// fractional Brownian motion
+//
+export float fBm_float(float3 position, int octaves, float lacunarity, float diminish)
+[[
+    anno::hidden()
+]]
+{
+    float result = 0.0;
+    float amplitude = 1.0;
+    float3 p = position;
+
+    for (int i = 0;  i < octaves;  i += 1) {
+        result += amplitude * perlin_noise_float(p);
+        amplitude *= diminish;
+        p *= lacunarity; // TODO: around the origin this displays repetition artifacts
+    }
+    return result;
+}
+
+
+export float3 fBm_float3(float3 position, int octaves, float lacunarity, float diminish)
+[[
+    anno::hidden()
+]]
+{
+    float3 result = 0.0;
+    float amplitude = 1.0;
+    float3 p = position;
+
+    for (int i = 0;  i < octaves;  i += 1) {
+        result += float3(amplitude * perlin_noise_float3(p));
+        amplitude *= diminish;
+        p *= lacunarity;  // TODO: around the origin this displays repetition artifacts
+    }
+    return result;
+}
+
+export color3 fBm_color3( float3 position, int octaves, float lacunarity, float diminish)
+[[
+    anno::hidden()
+]]
+{
+    return color3(fBm_float3(position, octaves, lacunarity, diminish));
+}
+
+export float2 fBm_float2( float3 position, int octaves, float lacunarity, float diminish)
+[[
+    anno::hidden()
+]]
+{
+    return float2 ( fBm_float (position, octaves, lacunarity, diminish),
+                    fBm_float (position+float3(19, 193, 17), octaves, lacunarity, diminish));
+}
+
+export float4 fBm_float4( float3 position, int octaves, float lacunarity, float diminish)
+[[
+    anno::hidden()
+]]
+{
+    float3 c = fBm_float3 (position, octaves, lacunarity, diminish);
+    float f = fBm_float (position+float3(19, 193, 17), octaves, lacunarity, diminish);
+    return float4 (c[0], c[1], c[2], f);
+}
+
+
+export float cellnoise (float2 position)
+[[
+    anno::hidden()
+]]
+{
+    // TODO: this is quantized, should do better
+    int X = math::floor(position.x),
+        Y = math::floor(position.y);
+    int HX = rnd1[ X    &255],
+        HY = rnd2[(Y+HX)&255];
+    return float(HY)/255.0;
+}
+
+export float cellnoise (float3 position)
+[[
+    anno::hidden()
+]]
+{
+    // TODO: this is quantized, should do better
+    int X = math::floor(position.x),
+        Y = math::floor(position.y),
+        Z = math::floor(position.z);
+    int HX = rnd1[ X    &255],
+        HY = rnd2[(Y+HX)&255],
+        HZ = rnd3[(Z+HY)&255];
+    return float(HZ)/255.0;
+}
+
+export color3 rgb2hsv(color3 input)
+[[
+    anno::hidden()
+]]
+{
+    float3 c = float3(input);
+    float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    float4 p = math::lerp(
+        float4(c[2], c[1], K[3], K[2]),
+        float4(c[1], c[2], K[0], K[1]),
+        math::step(c[2], c[1]));
+    float4 q = math::lerp(
+        float4(p[0], p[1], p[3], c[0]),
+        float4(c[0], p[1], p[2], p[0]),
+        math::step(p[0], c[0]));
+
+    float d = q[0] - min(q[3], q[1]);
+    float e = 1.0e-10;
+    return color3(math::abs(
+        q[2] + (q[3] - q[1]) / (6.0 * d + e)), d / (q[0] + e), q[0]);
+}
+
+export color3 hsv2rgb(color3 input)
+[[
+    anno::hidden()
+]]
+{
+    //float3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    //return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+
+    float3 c = float3(input);
+    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    float3 p = math::abs(
+        math::frac(
+            float3(c[0]) + float3(K[0], K[1], K[2])) * 6.0 - float3(K[3]));
+    return color3(c[2] * math::lerp(
+        float3(K[0]), math::clamp(p - float3(K[0]), 0.0, 1.0), c[1]));
+}
+
+export float determinant(float2x2 m)
+[[
+    anno::hidden()
+]]
+{
+    return m[0][0] * m[1][1] - m[0][1] * m[1][0];
+}
+
+export float determinant(float3x3 m)
+[[
+    anno::hidden()
+]]
+{
+    return m[0][0] * (m[2][2]*m[1][1] - m[1][2]*m[2][1])
+       + m[0][1] * (m[1][2]*m[2][0] - m[2][2]*m[1][0])
+       + m[0][2] * (m[2][1]*m[1][0] - m[1][1]*m[2][0]);
+}
+
+export float determinant(float4x4 m)
+[[
+    anno::hidden()
+]]
+{
+    float
+        b00 = m[0][0] * m[1][1] - m[0][1] * m[1][0],
+        b01 = m[0][0] * m[1][2] - m[0][2] * m[1][0],
+        b02 = m[0][0] * m[1][3] - m[0][3] * m[1][0],
+        b03 = m[0][1] * m[1][2] - m[0][2] * m[1][1],
+        b04 = m[0][1] * m[1][3] - m[0][3] * m[1][1],
+        b05 = m[0][2] * m[1][3] - m[0][3] * m[1][2],
+        b06 = m[2][0] * m[3][1] - m[2][1] * m[3][0],
+        b07 = m[2][0] * m[3][2] - m[2][2] * m[3][0],
+        b08 = m[2][0] * m[3][3] - m[2][3] * m[3][0],
+        b09 = m[2][1] * m[3][2] - m[2][2] * m[3][1],
+        b10 = m[2][1] * m[3][3] - m[2][3] * m[3][1],
+        b11 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+    return b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+}
+
+export float2 rotate_float2(float2 input, float amount)
+[[
+    anno::hidden()
+]]
+{
+    float rotationRadians = math::radians(amount);
+    float sa = math::sin(rotationRadians);
+    float ca = math::cos(rotationRadians);
+    return float2(ca*input.x + sa*input.y, -sa*input.x + ca*input.y);
+}
+
+float4x4 rotationMatrix(float3 axis, float angle)
+{
+    float3 n_axis = math::normalize(axis);
+    float s = math::sin(angle);
+    float c = math::cos(angle);
+    float oc = 1.0 - c;
+
+    return float4x4(
+        oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+        oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+        oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+        0.0,                                0.0,                                0.0,                                1.0);
+}
+
+export float3 rotate_float3(float3 input, float amount, float3 axis)
+[[
+    anno::hidden()
+]]
+{
+    float rotationRadians = math::radians(amount);
+    float4x4 m = rotationMatrix(axis, rotationRadians);
+    float4 retval4 = m * float4(input.x, input.y, input.z, 1.0);
+    return float3(retval4.x, retval4.y, retval4.z);
+}
+
+
+// Conversion utilities
+export float to_float(float input) [[ anno::hidden() ]]{
+    return input;
+}
+export float to_float(int input) [[ anno::hidden() ]]{
+    return float(input);
+}
+export float to_float(bool input) [[ anno::hidden() ]]{
+    return float(input);
+}
+export float to_float(float2 input) [[ anno::hidden() ]]{
+    return input[0];
+}
+export float to_float(float3 input) [[ anno::hidden() ]]{
+    return input[0];
+}
+export float to_float(float4 input) [[ anno::hidden() ]]{
+    return input[0];
+}
+export float to_float(color3 input) [[ anno::hidden() ]]{
+    return float3(input)[0];
+}
+
+export int to_int(float input) [[ anno::hidden() ]]{
+    return int(input);
+}
+export int to_int(int input) [[ anno::hidden() ]]{
+    return input;
+}
+export int to_int(bool input) [[ anno::hidden() ]]{
+    return int(input);
+}
+export int to_int(float2 input) [[ anno::hidden() ]]{
+    return int(input[0]);
+}
+export int to_int(float3 input) [[ anno::hidden() ]]{
+    return int(input[0]);
+}
+export int to_int(float4 input) [[ anno::hidden() ]]{
+    return int(input[0]);
+}
+export int to_int(color3 input) [[ anno::hidden() ]]{
+    return int(float3(input)[0]);
+}
+
+export bool to_bool(float input) [[ anno::hidden() ]]{
+    return input != 0.f;
+}
+export bool to_bool(int input) [[ anno::hidden() ]]{
+    return bool(input);
+}
+export bool to_bool(bool input) [[ anno::hidden() ]]{
+    return input;
+}
+export bool to_bool(float2 input) [[ anno::hidden() ]]{
+    return input[0] != 0.f;
+}
+export bool to_bool(float3 input) [[ anno::hidden() ]]{
+    return input[0] != 0.f;
+}
+export bool to_bool(float4 input) [[ anno::hidden() ]]{
+    return input[0] != 0.f;
+}
+export bool to_bool(color3 input) [[ anno::hidden() ]]{
+    return float3(input)[0] != 0.f;
+}
+
+export float2 to_float2(float input) [[ anno::hidden() ]]{
+    return float2(input, input);
+}
+export float2 to_float2(int input) [[ anno::hidden() ]]{
+    return float2(float(input), float(input));
+}
+export float2 to_float2(bool input) [[ anno::hidden() ]]{
+    return float2(float(input), float(input));
+}
+export float2 to_float2(float2 input) [[ anno::hidden() ]]{
+    return input;
+}
+export float2 to_float2(float3 input) [[ anno::hidden() ]]{
+    return float2(input[0], input[1]);
+}
+export float2 to_float2(float4 input) [[ anno::hidden() ]]{
+    return float2(input[0], input[1]);
+}
+export float2 to_float2(color3 input) [[ anno::hidden() ]]{
+    float3 inputFloat3 = float3(input);
+    return float2(inputFloat3[0], inputFloat3[1]);
+}
+
+export float3 to_float3(float input) [[ anno::hidden() ]]{
+    return float3(input, input, input);
+}
+export float3 to_float3(int input) [[ anno::hidden() ]]{
+    return float3(float(input), float(input), float(input));
+}
+export float3 to_float3(bool input) [[ anno::hidden() ]]{
+    return float3(float(input), float(input), float(input));
+}
+export float3 to_float3(float2 input) [[ anno::hidden() ]]{
+    return float3(input[0], input[1], 0.f);
+}
+export float3 to_float3(float3 input) [[ anno::hidden() ]]{
+    return input;
+}
+export float3 to_float3(float4 input) [[ anno::hidden() ]]{
+    return float3(input[0], input[1], input[2]);
+}
+export float3 to_float3(color3 input) [[ anno::hidden() ]]{
+    return float3(input);
+}
+
+export float4 to_float4(float input) [[ anno::hidden() ]]{
+    return float4(input, input, input, 1.0);
+}
+export float4 to_float4(int input) [[ anno::hidden() ]]{
+    return float4(float(input), float(input), float(input), 1.0);
+}
+export float4 to_float4(bool input) [[ anno::hidden() ]]{
+    return float4(float(input), float(input), float(input), 1.0);
+}
+export float4 to_float4(float2 input) [[ anno::hidden() ]]{
+    return float4(input[0], input[1], 0.f, 1.0);
+}
+export float4 to_float4(float3 input) [[ anno::hidden() ]]{
+    return float4(input[0], input[1], input[2], 1.0);
+}
+export float4 to_float4(float4 input) [[ anno::hidden() ]]{
+    return input;
+}
+export float4 to_float4(color3 input) [[ anno::hidden() ]]{
+    float3 inputf3 = float3(input);
+    return float4(inputf3[0], inputf3[1], inputf3[2], 1.0);
+}
+
+export color3 to_color3(float input) [[ anno::hidden() ]]{
+    return color3(input, input, input);
+}
+export color3 to_color3(int input) [[ anno::hidden() ]]{
+    return color3(float(input), float(input), float(input));
+}
+export color3 to_color3(bool input) [[ anno::hidden() ]]{
+    return color3(float(input), float(input), float(input));
+}
+export color3 to_color3(float2 input) [[ anno::hidden() ]]{
+    return color3(input[0], input[1], 0.f);
+}
+export color3 to_color3(float3 input) [[ anno::hidden() ]]{
+    return color3(input);
+}
+export color3 to_color3(float4 input) [[ anno::hidden() ]]{
+    return color3(input[0], input[1], input[2]);
+}
+export color3 to_color3(color3 input) [[ anno::hidden() ]]{
+    return input;
+}
+
+
+//////////////// BRDF UTILITIES //////////////////////////////
+// implement the reparametrization of conductors referring to:
+// http://jcgt.org/published/0003/04/03/paper.pdf
+
+// converts two colors to complex IOR
+export struct FresnelComplex {
+    color3 real;
+    color3 imaginary;
+};
+export FresnelComplex artisticToConductorFresnel(color3 reflectivity, color3 edgetint)
+{
+    float3 r = clamp(
+        float3(reflectivity), float3(0.,0.,0.), float3(0.999,0.999,0.999));
+    float3 g = float3(edgetint);
+
+    float3 r_sqrt = sqrt(r);
+    float3 ones = float3(1.0,1.0,1.0);
+    float3 n_min = (ones - r) / (ones + r);
+    float3 n_max = (ones + r_sqrt) / (ones - r_sqrt);
+
+    float3 n = lerp(n_max, n_min, g);
+
+    float3 k2 = ((n + ones) * (n + ones) * r - (n - ones) * (n - ones)) / (ones - r);
+    k2 = max(k2, 0);
+    float3 k = sqrt(k2);
+    FresnelComplex retval;
+    retval.real = color3(n);
+    retval.imaginary = color3(k);
+    return retval;
+}
+
+//////////////////////////////////////////////////////////////
+// Dummy material
+
+export material dummyMaterial() = material(
+    surface: material_surface(
+        emission: material_emission(
+            emission: df::diffuse_edf(),
+            intensity: color(1.0),
+            mode: intensity_radiant_exitance
+        )
+    )
+);
+
+
+/*
+export float ridge(float h, float offset)
+{
+    h = offset - math::abs(h);
+    return h*h;
+}
+export float summed_perlin_noise_float(float3 pos, float time,  int terms, float3 turbulence_weight, bool abs_noise, bool ridged)
+{
+    float sum = 0.0f;
+    float weight = ridged ? 0.625f : 1.0f;
+    float prev = 1.0f;
+    float4 p = float4(pos.x,pos.y,pos.z,time);
+    while(terms != 0) {
+        terms--;
+        float n = perlin_noise_float(p);
+        float n2 = ridged ? ridge(n, 1.0f) : (abs_noise ? math::abs(n) : n); // ridged offset = 1.0f, could be configurable
+        sum += weight*prev*n2;
+        p += p;       // frequency doubled, could be configurable
+        if (ridged)
+            prev = n2;
+        weight *= 0.5f; // gain halved, could be configurable
+    }
+    float sn = ((turbulence_weight.x != 0.0f) || (turbulence_weight.y != 0.0f) || (turbulence_weight.z != 0.0f) )
+        ? math::sin(pos.x*turbulence_weight.x + pos.y*turbulence_weight.y + pos.z*turbulence_weight.z + sum)
+        : sum;
+
+    if (!abs_noise && !ridged) { // Absolute & Ridged already are in 0..1
+        // Scale [-1,1] to [0,1]
+        sn = sn*0.5f+0.5f;
+    }
+    return sn;
+}
+*/

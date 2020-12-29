@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <style>
+   .center {
+                margin: auto;
+                width: 50%;
+                padding: 10px;
+                font-family: Sans-serif
+            }
+            img {
+                max-width: 100%;
+                max-height: 100%;
+            }
+            code {
+                color: navy;
+                white-space: pre
+            }
+  </style>
+ </head>
+ <body>
+  <div class="center">
+   <h1>
+    Building MaterialX for the Substance Designer Plugin
+   </h1>
+   <p>
+    These instructions will help you to build a MaterialX package for the MaterialX Substance 
+Designer plugin. They are generally made for linux and mac since there are no prebuilt 
+packages but should be easy to apply to windows too
+   </p>
+   <h2>
+    Prerequisites
+   </h2>
+   <ul>
+    <li>
+     Python 3.7 (ideally 3.7.6)
+    </li>
+    <li>
+     A moderately modern gcc/clang toolchain. We have seen issues with gcc 4 so make sure you have something fairly modern
+    </li>
+    <li>
+     CMake
+    </li>
+   </ul>
+   <p>
+    Building or installing these are beyond the scope of this tutorial and varies depending
+on the system so it's left out.
+   </p>
+   <h2>
+    Getting the MaterialX source code
+   </h2>
+   <p>
+    Clone MaterialX 1.37.2 or master (at the point of writing) from github. The main page is here the
+    <a href="https://github.com/materialx/MaterialX">
+     MaterialX Github
+    </a>
+    .
+A typical command line looks something like this.
+   </p>
+   <p>
+    <code>
+     git clone https://github.com/materialx/MaterialX.git
+    </code>
+   </p>
+   <p>
+    This will put the MaterialX source code in a directory called MaterialX. Now enter this directory
+   </p>
+   <p>
+    <code>
+     cd MaterialX
+    </code>
+   </p>
+   <p>
+    Note that this will checkout the master branch. To be safe you might want to use the 1.37.2 branch
+    <code>
+     git checkout v1.37.2
+    </code>
+   </p>
+   <p>
+    Finally sync the submodules recursively
+   </p>
+   <p>
+    <code>
+     git submodule update --init --recursive
+    </code>
+   </p>
+   <h2>
+    Configuring the build
+   </h2>
+   <p>
+    Create a build directory and enter it
+   </p>
+   <p>
+    <code>
+     mkdir build
+cd build
+    </code>
+   </p>
+   <p>
+    For the plugin, what we need is a separated installation directory rather than installing
+MaterialX system wide. We also want to make sure we build python bindings and the MaterialX
+viewer
+   </p>
+   <p>
+    <code>
+     cmake .. \
+    -DMATERIALX_BUILD_PYTHON=1 \
+    -DMATERIALX_INSTALL_PYTHON=1 \
+    -DMATERIALX_PYTHON_EXECUTABLE=/usr/bin/python3 \
+        -DMATERIALX_BUILD_VIEWER=TRUE \
+    -DMATERIALX_BUILD_DOCS=0 \
+    -DMATERIALX_BUILD_VIEW=0 \
+    -DMATERIALX_TEST_VIEW=0 \
+    -DCMAKE_INSTALL_PREFIX=./installed/MaterialX
+    </code>
+    *
+    <code>
+     MATERIALX_PYTHON_EXECUTABLE
+    </code>
+    should be the full path to the python3.7 executable you
+intend to build against
+*
+    <code>
+     CMAKE_INSTALL_PREFIX
+    </code>
+    is set to install everything in a subdirectory to the build
+directory called
+    <code>
+     installed/MaterialX
+    </code>
+    which we can copy into our installation directory.
+   </p>
+   <p>
+    In this process there might be errors related to libraries missing on your system and
+you might need to install some of them to get everything running. How to do this depends
+on your system and is outside the scope of these instructions.
+   </p>
+   <h2>
+    Building MaterialX
+   </h2>
+   <p>
+    To build run
+   </p>
+   <p>
+    <code>
+     make -j4 install
+    </code>
+   </p>
+   <p>
+    This will compile the components we want and install all files in a structured form.
+    <code>
+     -j4
+    </code>
+    decides how many parallel build operations can be run at the same time and 
+should ideally be in the same ballpark as the number of cores your computer has for
+best build performance.
+   </p>
+   <h2>
+    Installing
+   </h2>
+   <p>
+    When the operation is done, assuming everything worked, copy the
+    <code>
+     MaterialX
+    </code>
+    directory from 
+the
+    <code>
+     installed
+    </code>
+    directory to the
+    <code>
+     sdmatxplugin
+    </code>
+    directory.
+   </p>
+  </div>
+ </body>
+</html>
+

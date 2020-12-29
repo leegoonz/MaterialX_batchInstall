@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <style>
+   .center {
+                margin: auto;
+                width: 50%;
+                padding: 10px;
+                font-family: Sans-serif
+            }
+            img {
+                max-width: 100%;
+                max-height: 100%;
+            }
+            code {
+                color: navy;
+                white-space: pre
+            }
+  </style>
+ </head>
+ <body>
+  <div class="center">
+   <h1>
+    Floor Sample
+   </h1>
+   <p>
+    <img alt="alt text" src="images/rust_v1.png" title="Rust Version 1"/>
+   </p>
+   <p>
+    The floor sample is a graph that mixes procedural textures and procedural shading in order to add rust to a surface
+based on shader parameters.
+   </p>
+   <h2>
+    Features Shown
+   </h2>
+   <ul>
+    <li>
+     Procedural world space noise for micro details in masking
+    </li>
+    <li>
+     Managing different textures at different resolution and tilings to save texture usage
+    </li>
+    <li>
+     Procedural mask generation
+    </li>
+    <li>
+     Texture binding
+    </li>
+   </ul>
+   <h2>
+    The textures
+   </h2>
+   <p>
+    The sample is located in data/substances in the plugin directory. It contains two graphs, the MaterialX
+graph called Shader and the procedural texture graph called Floor.
+   </p>
+   <p>
+    The textures produced are by the Floor Graph
+   </p>
+   <ul>
+    <li>
+     <strong>
+      basecolor
+     </strong>
+     the base color map for the floor
+    </li>
+    <li>
+     <strong>
+      normal
+     </strong>
+     the normal map for the floor
+    </li>
+    <li>
+     <strong>
+      roughness
+     </strong>
+     the roughness map for the floor
+    </li>
+    <li>
+     <strong>
+      metallic
+     </strong>
+     the metallic map for the floor
+    </li>
+    <li>
+     <strong>
+      Rust_Basecolor
+     </strong>
+     The basecolor for the rust map
+    </li>
+    <li>
+     <strong>
+      Rust_Normal
+     </strong>
+     The normal for the rust map
+    </li>
+    <li>
+     <strong>
+      Floor_AO
+     </strong>
+     The ambient occlusion map used to drive rust. This one is tiled like the normal map and controls areas 
+where more or less rust should show up
+    </li>
+   </ul>
+   <p>
+    The first thing to note is how
+    <strong>
+     normal
+    </strong>
+    and
+    <strong>
+     floor_AO
+    </strong>
+    are lower resolution textures that can be tiled independently
+of the rest of the textures meant for a repetitive pattern. The two rust maps are also tiled individually to make it
+possible to have more high frequency details in the rust.
+   </p>
+   <h2>
+    The Shader
+   </h2>
+   <p>
+    <img alt="alt text" src="images/floor_graph.png" title="Floor Graph"/>
+   </p>
+   <p>
+    The shader is built in the following parts:
+   </p>
+   <ul>
+    <li>
+     <strong>
+      Input Parameters
+     </strong>
+     Different parameters allowing the shader to change appearance
+    </li>
+    <li>
+     <strong>
+      Primvars
+     </strong>
+     This is where positions and UVs are looked up and scaled for usage by different samplers/procedurals
+    </li>
+    <li>
+     <strong>
+      Samplers
+     </strong>
+     Texture samplers fetching texture data from the Floor comp graph
+    </li>
+    <li>
+     <strong>
+      Procedural Grunge
+     </strong>
+     Noises for producing world space perturbations when generating the mask for where the rust is
+    </li>
+    <li>
+     <strong>
+      Rust Mask
+     </strong>
+     Where the procedural grunge, texture data and parameters are used to compute a rust mask
+    </li>
+    <li>
+     <strong>
+      Mask Blending
+     </strong>
+     The textures are mixed with based on the rust mask
+    </li>
+   </ul>
+   <h3>
+    The parameters
+   </h3>
+   <ul>
+    <li>
+     <strong>
+      rust_roughness
+     </strong>
+     Global roughness value for rusty parts
+    </li>
+    <li>
+     <strong>
+      rust_metallic
+     </strong>
+     Global metallic for the rusty parts
+    </li>
+    <li>
+     <strong>
+      rust_pow
+     </strong>
+     Controls the sharpness of the border between rusty and non-rusty part
+    </li>
+    <li>
+     <strong>
+      rust_factor
+     </strong>
+     Sets the amount to rust to have on the object
+    </li>
+    <li>
+     <strong>
+      grunge_scale
+     </strong>
+     Controls the scale of the grunge modulated into the rust mask
+    </li>
+    <li>
+     <strong>
+      grunge_offset
+     </strong>
+     Offsets the grunge in the rust
+    </li>
+    <li>
+     <strong>
+      rust_tiling
+     </strong>
+     Tiles the Rust_basecolor texture for more or less texture detail/tiling in the rust
+    </li>
+    <li>
+     <strong>
+      pattern_tiling
+     </strong>
+     Tiles the normal map (and the ao map) over the object
+    </li>
+    <li>
+     <strong>
+      visualize_mask
+     </strong>
+     Debug setting to visualize the rust mask in the basecolor
+    </li>
+   </ul>
+   <p>
+    Tweaking parameters on the shader only we can create multiple different looks
+   </p>
+   <p>
+    <img alt="alt text" src="images/rust_v1.png" title="Rust Version 1"/>
+   </p>
+   <p>
+    <img alt="alt text" src="images/rust_v2.png" title="Rust Version 2"/>
+   </p>
+   <p>
+    <img alt="alt text" src="images/rust_v3.png" title="Rust Version 3"/>
+   </p>
+  </div>
+ </body>
+</html>
+
